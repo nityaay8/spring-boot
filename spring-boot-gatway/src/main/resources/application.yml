@@ -1,0 +1,20 @@
+server:
+  port: 8080
+  
+logging:
+  level:
+   root: INFO
+      
+  
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: employeeModule
+        uri: http://localhost:8081/emp/
+        predicates:
+        - Path=/emp1/**
+      - id: consumerModule
+        uri: http://localhost:8082/
+        predicates:
+        - Path=/consumer/**
