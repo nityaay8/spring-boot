@@ -1,12 +1,11 @@
 package com.n9.config;
 
 import com.n9.listener.ResourceCompletionNotificationListener;
-import com.n9.model.TinyUrlData;
-import com.n9.processor.TinyUrlProcessor;
+import com.n9.model.SavedMsgData;
+import com.n9.processor.SavedMsgProcessor;
 import com.n9.service.ResourceURLService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
@@ -25,8 +24,7 @@ import org.springframework.core.io.Resource;
 
 
 @Configuration
-@EnableBatchProcessing
-public class ResourceBatchConfiguration {
+public class SavedMsgDataBatchConfiguration {
 
     @Autowired
     public JobBuilderFactory jobBuilderFactory;
@@ -34,43 +32,42 @@ public class ResourceBatchConfiguration {
     @Autowired
     public StepBuilderFactory stepBuilderFactory;
 
-    @Value("${resourceOutputFileDir}")
+    @Value("${savedMsgOutputFileDir}")
     private String outputFileDir;
 
-    @Value("${resourceInputFilePath}")
+    @Value("${savedMsgInputFilePath}")
     private String inputFilePath;
 
     @Autowired
     private ResourceURLService resourceURLService;
 
 
-    public FlatFileItemReader<TinyUrlData> reader() {
-        return new FlatFileItemReaderBuilder<TinyUrlData>()
-                .name("tinyUrlDataItemReader")
+    public FlatFileItemReader<SavedMsgData> reader() {
+        return new FlatFileItemReaderBuilder<SavedMsgData>()
+                .name("savedMsgDataDataItemReader")
                 .resource(new FileSystemResource(inputFilePath))
                 .linesToSkip(1)
                 .delimited()
 //                .names(new String[]{"resourceid", "shorturl"})
-                .names(new String[]{"resourceid", "resourcecollectionid", "organizationid", "name", "description", "refkey",
-                        "fullurl", "shorturl", "createdatetime", "updatedatetime", "entid", "orgid"})
-                .fieldSetMapper(new BeanWrapperFieldSetMapper<TinyUrlData>() {{
-                    setTargetType(TinyUrlData.class);
+                .names(new String[]{"savedmessageid", "organizationid", "agentid", "title", "body", "rawmessagedata", "createdatetime", "updatedatetime", "entid", "orgid"})
+                .fieldSetMapper(new BeanWrapperFieldSetMapper<SavedMsgData>() {{
+                    setTargetType(SavedMsgData.class);
                 }})
                 .build();
     }
 
 
-    public TinyUrlProcessor processor() {
-        return new TinyUrlProcessor(resourceURLService);
+    public SavedMsgProcessor processor() {
+        return new SavedMsgProcessor(resourceURLService);
     }
 
 
-    public FlatFileItemWriter<TinyUrlData> writer() {
+    public FlatFileItemWriter<SavedMsgData> writer() {
 
-        Resource outputResource = new FileSystemResource(outputFileDir + "/resource_table.csv");
+        Resource outputResource = new FileSystemResource(outputFileDir + "/saved_msg_data.csv");
 
         //Create writer instance
-        FlatFileItemWriter<TinyUrlData> writer = new FlatFileItemWriter<>();
+        FlatFileItemWriter<SavedMsgData> writer = new FlatFileItemWriter<>();
 
         //Set output file location
         writer.setResource(outputResource);
@@ -82,10 +79,10 @@ public class ResourceBatchConfiguration {
         writer.setLineAggregator(new DelimitedLineAggregator() {
             {
                 setDelimiter(",");
-                setFieldExtractor(new BeanWrapperFieldExtractor<TinyUrlData>() {
+                setFieldExtractor(new BeanWrapperFieldExtractor<SavedMsgData>() {
                     {
                         setNames(new String[]{
-                                "resourceid", "shorturl"
+                                "savedmessageid", "body","rawmessagedata"
                         });
                     }
                 });
@@ -96,22 +93,23 @@ public class ResourceBatchConfiguration {
 
     }
 
-    public Step step1() {
-        return stepBuilderFactory.get("step1")
-                .<TinyUrlData, TinyUrlData>chunk(10)
-                .reader(reader())
-                .processor(processor())
-                .writer(writer())
-                .build();
-    }
-
     @Bean
-    public Job importTinyUrlDataJob(ResourceCompletionNotificationListener listener) {
-        return jobBuilderFactory.get("importTinyUrlDataJob")
+    public Job savedMsgDataDataJob(ResourceCompletionNotificationListener listener) {
+        return jobBuilderFactory.get("savedMsgDataDataJob")
                 .incrementer(new RunIdIncrementer())
                 .listener(listener)
                 .flow(step1())
                 .end()
+                .build();
+    }
+
+
+    public Step step1() {
+        return stepBuilderFactory.get("step1")
+                .<SavedMsgData, SavedMsgData>chunk(10)
+                .reader(reader())
+                .processor(processor())
+                .writer(writer())
                 .build();
     }
 

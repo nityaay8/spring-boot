@@ -41,7 +41,10 @@ public class ResourceURLService {
                 exchange(transformTinyUrl, HttpMethod.POST, request, String.class);
 
         JsonNode root = objectMapper.readTree(responseEntityStr.getBody());
-        responseUrl = root.at("/content").get(tinyUrl).asText();
+        JsonNode content = root.at("/content");
+        if (content != null && content.get(tinyUrl) != null) {
+            responseUrl = content.get(tinyUrl).asText();
+        }
         return responseUrl;
 
     }

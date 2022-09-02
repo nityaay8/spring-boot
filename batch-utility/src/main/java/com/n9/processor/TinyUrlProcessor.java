@@ -19,7 +19,7 @@ public class TinyUrlProcessor implements ItemProcessor<TinyUrlData, TinyUrlData>
 
     @Override
     public TinyUrlData process(final TinyUrlData tinyUrlData) throws Exception {
-        final String resourceid = tinyUrlData.getResourceid().toUpperCase();
+        final String resourceid = tinyUrlData.getResourceid();
         final String shorturl = resourceURLService.proccessUrl(tinyUrlData.getShorturl());
 
         final TinyUrlData transformedTinyUrlData = new TinyUrlData(resourceid, shorturl);
