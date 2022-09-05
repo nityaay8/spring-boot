@@ -102,4 +102,13 @@ public class SavedMsgData {
     public void setOrgid(String orgid) {
         this.orgid = orgid;
     }
+
+    @Override
+    public String toString() {
+        return "SavedMsgData{" +
+                "savedmessageid='" + savedmessageid + '\'' +
+                ", body='" + body + '\'' +
+                ", rawmessagedata='" + rawmessagedata + '\'' +
+                '}';
+    }
 }

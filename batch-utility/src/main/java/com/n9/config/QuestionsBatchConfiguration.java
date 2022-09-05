@@ -1,11 +1,12 @@
 package com.n9.config;
 
 import com.n9.listener.ResourceCompletionNotificationListener;
-import com.n9.model.SavedMsgData;
-import com.n9.processor.SavedMsgProcessor;
+import com.n9.model.QuestionsInfo;
+import com.n9.processor.QuestionsProcessor;
 import com.n9.service.ResourceURLService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
@@ -24,7 +25,8 @@ import org.springframework.core.io.Resource;
 
 
 @Configuration
-public class SavedMsgDataBatchConfiguration {
+@EnableBatchProcessing
+public class QuestionsBatchConfiguration {
 
     @Autowired
     public JobBuilderFactory jobBuilderFactory;
@@ -32,45 +34,45 @@ public class SavedMsgDataBatchConfiguration {
     @Autowired
     public StepBuilderFactory stepBuilderFactory;
 
-    @Value("${savedMsgOutputFileDir}")
+    @Value("${questionsOutputFileDir}")
     private String outputFileDir;
 
-    @Value("${savedMsgInputFilePath}")
+    @Value("${questionsInputFilePath}")
     private String inputFilePath;
+
+
+    String[] inputCols = {"questionid", "qtopicid", "summary", "body", "refkey", "createdatetime", "updatedatetime", "entid", "orgid"};
+    String[] outputCols = {"questionid", "summary", "body"};
 
     @Autowired
     private ResourceURLService resourceURLService;
 
-    String[] inputCols = {"savedmessageid", "organizationid", "agentid", "title", "body", "rawmessagedata", "createdatetime", "updatedatetime", "entid", "orgid"};
-    String[] outputCols = {"savedmessageid", "body", "rawmessagedata"};
 
-
-    public FlatFileItemReader<SavedMsgData> reader() {
-        return new FlatFileItemReaderBuilder<SavedMsgData>()
-                .name("savedMsgDataDataItemReader")
+    public FlatFileItemReader<QuestionsInfo> reader() {
+        return new FlatFileItemReaderBuilder<QuestionsInfo>()
+                .name("questionsDataItemReader")
                 .resource(new FileSystemResource(inputFilePath))
                 .linesToSkip(1)
                 .delimited()
-//                .names(new String[]{"resourceid", "shorturl"})
                 .names(inputCols)
-                .fieldSetMapper(new BeanWrapperFieldSetMapper<SavedMsgData>() {{
-                    setTargetType(SavedMsgData.class);
+                .fieldSetMapper(new BeanWrapperFieldSetMapper<QuestionsInfo>() {{
+                    setTargetType(QuestionsInfo.class);
                 }})
                 .build();
     }
 
 
-    public SavedMsgProcessor processor() {
-        return new SavedMsgProcessor(resourceURLService);
+    public QuestionsProcessor processor() {
+        return new QuestionsProcessor(resourceURLService);
     }
 
 
-    public FlatFileItemWriter<SavedMsgData> writer() {
+    public FlatFileItemWriter<QuestionsInfo> writer() {
 
-        Resource outputResource = new FileSystemResource(outputFileDir + "/saved_msg_data.csv");
+        Resource outputResource = new FileSystemResource(outputFileDir + "/questions.csv");
 
         //Create writer instance
-        FlatFileItemWriter<SavedMsgData> writer = new FlatFileItemWriter<>();
+        FlatFileItemWriter<QuestionsInfo> writer = new FlatFileItemWriter<>();
 
         //Set output file location
         writer.setResource(outputResource);
@@ -82,7 +84,7 @@ public class SavedMsgDataBatchConfiguration {
         writer.setLineAggregator(new DelimitedLineAggregator() {
             {
                 setDelimiter(",");
-                setFieldExtractor(new BeanWrapperFieldExtractor<SavedMsgData>() {
+                setFieldExtractor(new BeanWrapperFieldExtractor<QuestionsInfo>() {
                     {
                         setNames(outputCols);
                     }
@@ -94,21 +96,18 @@ public class SavedMsgDataBatchConfiguration {
 
     }
 
-
-
     public Step step1() {
         return stepBuilderFactory.get("step1")
-                .<SavedMsgData, SavedMsgData>chunk(10)
+                .<QuestionsInfo, QuestionsInfo>chunk(10)
                 .reader(reader())
                 .processor(processor())
                 .writer(writer())
                 .build();
     }
 
-
-//    @Bean
-    public Job savedMsgDataDataJob(ResourceCompletionNotificationListener listener) {
-        return jobBuilderFactory.get("savedMsgDataDataJob")
+    @Bean
+    public Job questionsInfoDataJob(ResourceCompletionNotificationListener listener) {
+        return jobBuilderFactory.get("questionsInfoDataJob")
                 .incrementer(new RunIdIncrementer())
                 .listener(listener)
                 .flow(step1())

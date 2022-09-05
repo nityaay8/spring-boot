@@ -44,6 +44,11 @@ public class ResourceBatchConfiguration {
     private ResourceURLService resourceURLService;
 
 
+    String[] inputCols = {"resourceid", "resourcecollectionid", "organizationid", "name", "description", "refkey",
+            "fullurl", "shorturl", "createdatetime", "updatedatetime", "entid", "orgid"};
+    String[] outputCols = {"resourceid", "shorturl"};
+
+
     public FlatFileItemReader<TinyUrlData> reader() {
         return new FlatFileItemReaderBuilder<TinyUrlData>()
                 .name("tinyUrlDataItemReader")
@@ -51,8 +56,7 @@ public class ResourceBatchConfiguration {
                 .linesToSkip(1)
                 .delimited()
 //                .names(new String[]{"resourceid", "shorturl"})
-                .names(new String[]{"resourceid", "resourcecollectionid", "organizationid", "name", "description", "refkey",
-                        "fullurl", "shorturl", "createdatetime", "updatedatetime", "entid", "orgid"})
+                .names(inputCols)
                 .fieldSetMapper(new BeanWrapperFieldSetMapper<TinyUrlData>() {{
                     setTargetType(TinyUrlData.class);
                 }})
@@ -84,9 +88,7 @@ public class ResourceBatchConfiguration {
                 setDelimiter(",");
                 setFieldExtractor(new BeanWrapperFieldExtractor<TinyUrlData>() {
                     {
-                        setNames(new String[]{
-                                "resourceid", "shorturl"
-                        });
+                        setNames(outputCols);
                     }
                 });
             }
@@ -105,7 +107,7 @@ public class ResourceBatchConfiguration {
                 .build();
     }
 
-    @Bean
+//    @Bean
     public Job importTinyUrlDataJob(ResourceCompletionNotificationListener listener) {
         return jobBuilderFactory.get("importTinyUrlDataJob")
                 .incrementer(new RunIdIncrementer())
